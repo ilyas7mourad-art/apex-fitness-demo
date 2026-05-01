@@ -52,12 +52,13 @@ export function PhoneMockup() {
         {/* Screen surface */}
         <div className="overflow-hidden rounded-[31px] bg-background">
           {/* ── Status bar ── */}
-          <div className="flex h-[44px] items-center justify-between px-5 pb-0 pt-[6px]">
+          <div className="relative flex h-[44px] items-center justify-between px-5 pt-[6px]">
             <span className="text-[12px] font-semibold leading-none text-foreground">
               9:41
             </span>
-            {/* Dynamic island */}
-            <div className="h-[22px] w-[80px] rounded-full bg-[oklch(0.11_0_0)]" />
+            {/* Dynamic island — absolutely centered so it's always at 50% of
+                the screen width regardless of left/right element widths */}
+            <div className="absolute left-1/2 top-1/2 h-[22px] w-[84px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[oklch(0.11_0_0)]" />
             {/* System icons */}
             <div className="flex items-center gap-1.5 text-foreground">
               <SignalBars />
