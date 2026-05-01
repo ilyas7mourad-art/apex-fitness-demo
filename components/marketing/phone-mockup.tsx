@@ -58,7 +58,7 @@ export function PhoneMockup() {
             </span>
             {/* Dynamic island — absolutely centered so it's always at 50% of
                 the screen width regardless of left/right element widths */}
-            <div className="absolute left-1/2 top-1/2 h-[22px] w-[84px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[oklch(0.11_0_0)]" />
+            <div className="absolute left-1/2 top-1/2 h-[22px] w-[60px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[oklch(0.11_0_0)]" />
             {/* System icons */}
             <div className="flex items-center gap-1.5 text-foreground">
               <SignalBars />
