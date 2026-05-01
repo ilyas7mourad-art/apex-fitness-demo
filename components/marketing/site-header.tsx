@@ -2,8 +2,8 @@ import { Badge } from "@/components/ui/badge";
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/90 backdrop-blur-sm">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/90 backdrop-blur-sm">
+      <div className="mx-auto flex h-12 max-w-6xl items-center justify-between px-6">
         <div className="flex items-center gap-2.5">
           <span
             className="h-5 w-5 rounded-sm"
