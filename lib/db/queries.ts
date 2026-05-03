@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase";
-import type { Gym, Machine, Member, Program, Session, GymEvent } from "@/lib/types";
+import type { Gym, Machine, Member, Program, Session, GymEvent, ProgramExercise, SetLog } from "@/lib/types";
 
 // ----------------------------------------------------------------
 // Gym
@@ -183,4 +183,130 @@ export async function logEvent(params: {
 
   if (error) return null;
   return data as GymEvent;
+}
+
+// ----------------------------------------------------------------
+// Program Exercises
+// ----------------------------------------------------------------
+
+export async function getProgramExercises(
+  programId: string,
+  dayNumber?: number,
+): Promise<ProgramExercise[]> {
+  const db = createAdminClient();
+  let query = db
+    .from("program_exercises")
+    .select("*")
+    .eq("program_id", programId)
+    .order("day_number")
+    .order("order_index");
+  if (dayNumber !== undefined) {
+    query = query.eq("day_number", dayNumber);
+  }
+  const { data, error } = await query;
+  if (error) return [];
+  return data ?? [];
+}
+
+// ----------------------------------------------------------------
+// Set Logs & Machine Usage
+// ----------------------------------------------------------------
+
+export async function getMostUsedMachines(
+  memberId: string,
+  gymId: string,
+  limit = 3,
+): Promise<Machine[]> {
+  const db = createAdminClient();
+  const { data: sessions } = await db
+    .from("sessions")
+    .select("id")
+    .eq("member_id", memberId)
+    .limit(500);
+  if (!sessions?.length) return [];
+  const sessionIds = sessions.map((s) => s.id);
+  const { data: logs } = await db
+    .from("set_logs")
+    .select("machine_id")
+    .in("session_id", sessionIds)
+    .not("machine_id", "is", null);
+  if (!logs?.length) return [];
+  const counts: Record<string, number> = {};
+  for (const log of logs) {
+    if (log.machine_id) counts[log.machine_id] = (counts[log.machine_id] ?? 0) + 1;
+  }
+  const topIds = Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([id]) => id);
+  if (!topIds.length) return [];
+  const { data: machines, error } = await db
+    .from("machines")
+    .select("*")
+    .eq("gym_id", gymId)
+    .in("id", topIds)
+    .eq("is_active", true);
+  if (error) return [];
+  return topIds.map((id) => machines?.find((m) => m.id === id)).filter(Boolean) as Machine[];
+}
+
+export async function getMachineSetLogs(
+  memberId: string,
+  machineId: string,
+  limit = 5,
+): Promise<SetLog[]> {
+  const db = createAdminClient();
+  const { data: sessions } = await db
+    .from("sessions")
+    .select("id")
+    .eq("member_id", memberId)
+    .limit(500);
+  if (!sessions?.length) return [];
+  const sessionIds = sessions.map((s) => s.id);
+  const { data, error } = await db
+    .from("set_logs")
+    .select("*")
+    .in("session_id", sessionIds)
+    .eq("machine_id", machineId)
+    .order("logged_at", { ascending: false })
+    .limit(limit);
+  if (error) return [];
+  return data ?? [];
+}
+
+export async function getOrCreateTodaySession(
+  memberId: string,
+  gymId: string,
+  programId?: string | null,
+): Promise<Session | null> {
+  const db = createAdminClient();
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const { data: existing } = await db
+    .from("sessions")
+    .select("*")
+    .eq("member_id", memberId)
+    .gte("started_at", todayStart.toISOString())
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (existing) return existing as Session;
+  const { data, error } = await db
+    .from("sessions")
+    .insert({ member_id: memberId, gym_id: gymId, program_id: programId ?? null, started_at: new Date().toISOString() })
+    .select("*")
+    .single();
+  if (error) return null;
+  return data as Session;
+}
+
+export async function getMachinesByIds(ids: string[]): Promise<Machine[]> {
+  if (!ids.length) return [];
+  const db = createAdminClient();
+  const { data, error } = await db
+    .from("machines")
+    .select("*")
+    .in("id", ids);
+  if (error) return [];
+  return data ?? [];
 }
