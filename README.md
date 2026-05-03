@@ -39,10 +39,30 @@ npm install
 cp .env.local.example .env.local
 ```
 
-Edit `.env.local` with your Supabase project URL and anon key.  
-For PR 1 the app renders without Supabase — seed data and queries are added in PR 2.
+Edit `.env.local` with your Supabase project URL, anon key, and service role key.
 
-### 3. Run the dev server
+```
+NEXT_PUBLIC_SUPABASE_URL=https://<project>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
+SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
+```
+
+### 3. Apply the database migration
+
+Paste the contents of `supabase/migrations/0001_initial_schema.sql` into the
+**SQL Editor** in your Supabase dashboard and run it. This creates all 9 tables,
+indexes, and RLS policies.
+
+### 4. Seed demo data
+
+```bash
+npm run seed -- --force
+```
+
+This inserts 1 gym, 18 machines, 80 members, 4 programs, ~1 800 sessions, and
+~2 500 events. Re-run at any time to reset to a clean demo state.
+
+### 5. Run the dev server
 
 ```bash
 npm run dev
@@ -50,7 +70,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-### 4. Build for production
+### 6. Build for production
 
 ```bash
 npm run build
@@ -90,6 +110,40 @@ from it with brief context about what each demonstrates.
 
 ---
 
+## Schema overview
+
+9 tables, all scoped by `gym_id`:
+
+| Table | Purpose |
+|---|---|
+| `gyms` | Gym profile (one row for the demo) |
+| `machines` | 18 gym machines with instructions and QR codes |
+| `members` | 80 demo members; 10 flagged `DEMO_FEATURED` for the picker |
+| `programs` | 4 structured workout programs |
+| `program_exercises` | Exercises within each program (day, order, sets, reps) |
+| `member_programs` | Which members are enrolled in which programs |
+| `sessions` | ~1 800 workout sessions across 3 months |
+| `set_logs` | Individual sets logged within each session |
+| `events` | Audit/activity stream (check-ins, milestones, alerts) |
+
+RLS is enabled on all tables. Browser clients (anon key) can only SELECT.
+Writes require the service role key used by the seed script and server actions.
+
+---
+
+## Hybrid auth (no login required)
+
+The member experience uses a "demo picker" pattern:
+
+1. `/m` shows 10 featured member cards — visitor clicks one
+2. A server action writes `apex_demo_member_id` (UUID) to a first-party cookie
+3. All subsequent member routes read this cookie and query via the admin client
+
+No Supabase Auth is involved. This keeps the demo frictionless while still
+demonstrating personalised, member-specific views.
+
+---
+
 ## Project structure
 
 ```
@@ -98,18 +152,23 @@ apex-fitness-demo/
 │   ├── layout.tsx           Root layout, Inter font, metadata
 │   ├── globals.css          Tailwind v4 + CSS variable theme tokens
 │   ├── page.tsx             Landing page (demo entry point)
-│   ├── m/page.tsx           Member experience (placeholder — PR 2)
-│   └── admin/page.tsx       Owner dashboard (placeholder — PR 2)
+│   ├── actions/member.ts    Server action — sets demo member cookie
+│   ├── api/health/          GET endpoint returning table row counts
+│   ├── m/page.tsx           Member picker (10 DEMO_FEATURED cards)
+│   ├── m/dashboard/         Member dashboard (reads cookie)
+│   └── admin/page.tsx       Owner dashboard (placeholder)
 ├── components/
 │   ├── ui/                  shadcn primitives
 │   ├── marketing/           Landing page sections
-│   ├── member/              Member screens (PR 2)
-│   └── owner/               Owner dashboard (PR 2)
+│   └── member/member-card.tsx  Clickable member card with amber hover
 ├── lib/
-│   ├── supabase.ts          Supabase client wrapper
-│   ├── types.ts             Shared TypeScript types
-│   ├── utils.ts             shadcn cn() utility
-│   └── seed/                Seed scripts (PR 2)
+│   ├── supabase.ts          createBrowserClient / createServerClient / createAdminClient
+│   ├── types.ts             Database interfaces + convenience joined types
+│   ├── db/queries.ts        Query helpers (getGym, listMembers, getSessions, …)
+│   └── utils.ts             shadcn cn() utility
+├── supabase/
+│   ├── migrations/          SQL migration files
+│   └── seed/seed.ts         80-member demo seed (run with npm run seed -- --force)
 └── public/                  Static assets
 ```
 
@@ -125,4 +184,5 @@ Required env vars:
 ```
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
 ```
