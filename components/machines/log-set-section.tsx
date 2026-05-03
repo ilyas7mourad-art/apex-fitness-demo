@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Machine } from "@/lib/types";
 import type { ProgramExercise } from "@/lib/types";
 import { LogSetSheet } from "@/components/member/log-set-sheet";
+import { formatExerciseDetail } from "@/lib/utils";
 
 interface LogSetSectionProps {
   machine: Machine;
@@ -66,16 +67,8 @@ export function LogSetSection({
             <div>
               <p className="text-base font-semibold text-foreground">{todayExercise.name}</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                {todayExercise.sets} sets &middot;{" "}
-                {todayExercise.reps_min}
-                {todayExercise.reps_max && todayExercise.reps_max !== todayExercise.reps_min
-                  ? `–${todayExercise.reps_max}`
-                  : ""}{" "}
-                reps &middot; {todayExercise.rest_seconds}s rest
+                {formatExerciseDetail(todayExercise)}
               </p>
-              {todayExercise.notes && (
-                <p className="mt-1 text-xs text-muted-foreground italic">{todayExercise.notes}</p>
-              )}
             </div>
             <button
               onClick={() => setSheetOpen(true)}

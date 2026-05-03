@@ -11,6 +11,7 @@ import {
 } from "@/lib/db/queries";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { MachineIllustration } from "@/components/machines/machine-illustration";
+import { formatExerciseDetail } from "@/lib/utils";
 import type { Machine } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -189,12 +190,7 @@ export default async function DashboardPage() {
                       <div>
                         <p className="text-sm font-medium text-foreground">{exercise.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {exercise.sets} sets &middot;{" "}
-                          {exercise.reps_min}
-                          {exercise.reps_max && exercise.reps_max !== exercise.reps_min
-                            ? `–${exercise.reps_max}`
-                            : ""}{" "}
-                          reps &middot; {exercise.rest_seconds}s rest
+                          {formatExerciseDetail(exercise)}
                         </p>
                       </div>
                       {machineSlug && (
